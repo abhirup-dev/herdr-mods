@@ -2,11 +2,14 @@
 // focused tab. The shipped `confirm` dialog's look; drawn here rather than opened from here,
 // because a dialog another mod opens doesn't get the keyboard. Enter closes, Esc cancels.
 // The tab is named when the dialog opens; `confirmed` skips the app's own question for a
-// space's last tab, since this one already asked.
+// space's last tab, since this one already asked. While it asks, shared("confirm-tab-close.tab")
+// names the tab, and auto-tabs outlines it in red.
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { run, props, closeOverlay, theme, focused, panes } from "herdr";
+import { run, props, closeOverlay, theme, focused, panes, setShared, checking } from "herdr";
+
+const ASKING = "confirm-tab-close.tab";
 
 export default class ConfirmTabClose extends View {
   init(_props, cx) {
@@ -16,10 +19,17 @@ export default class ConfirmTabClose extends View {
     this.handle = cx.focus_handle();
     // Focusing in the same press that opened it doesn't hold; after it's drawn does.
     cx.timer.after(30, () => this.handle.focus());
-    if (!this.tab) cx.timer.after(0, () => closeOverlay(props().overlay));
+    if (!this.tab) return void cx.timer.after(0, () => closeOverlay(props().overlay));
+    if (!checking()) setShared(ASKING, this.tab);
+  }
+
+  // Herdr calls close() when the overlay goes away, however it ends.
+  close() {
+    setShared(ASKING, null);
   }
 
   yes() {
+    setShared(ASKING, null);
     closeOverlay(props().overlay);
     run("tab.close", { id: this.tab, confirmed: true });
   }
@@ -27,7 +37,7 @@ export default class ConfirmTabClose extends View {
   render() {
     const t = theme();
     // Closing the dialog hands focus elsewhere; give it back to the pane.
-    const no = () => { closeOverlay(props().overlay); if (this.pane) run("pane.focus", { pane: this.pane }); };
+    const no = () => { setShared(ASKING, null); closeOverlay(props().overlay); if (this.pane) run("pane.focus", { pane: this.pane }); };
     const button = (id, label, bg, fg, onClick) =>
       h_flex().id(id).h(32).px(14).items_center().rounded(8).border_1().border_color(id === "no" ? t.input : bg).bg(bg).text_color(fg).cursor_pointer().hover((s) => s.opacity(0.88)).on_click(onClick).child(label);
     return v_flex().id("confirm").track_focus(this.handle)

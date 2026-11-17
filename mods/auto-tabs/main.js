@@ -71,6 +71,8 @@ export default class Tabs extends View {
       return h_flex().id(`tab-${c.id}`).h(29).px(10).gap(7).rounded_t(7).items_center().flex_none().text_size(12.8)
         .border_b_2().border_color(c.active ? focus : t.chrome).bg(c.active ? t.background ?? t.raised : t.chrome)
         .text_color(c.active ? t.foreground : t.muted).when(c.active, el => el.font_semibold())
+        // confirm-tab-close is asking about this tab: a red dotted outline until it's answered.
+        .when(shared("confirm-tab-close.tab") === c.id, el => el.border_2().border_dashed().border_color(t.ansi1))
         .hover(s => s.bg(t.hover))
         .on_mouse_down("left", (e, cx) => { cx.stop_propagation(); this.pressed = i; if (e.click_count === 2) run("tab.rename", { id: c.id }); })
         .on_mouse_up("left", () => {
