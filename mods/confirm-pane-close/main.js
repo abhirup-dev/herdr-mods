@@ -1,32 +1,15 @@
 // Cmd+W (keys.json: "mod.open:confirm-pane-close"): asks "Close pane?" before closing the
-// focused pane. Where the shown layout's pane header is `diagram-pane`, it names the pane in
-// shared("pane-ask") and goes: the header asks on the pane itself (diagram-pane/ask.js).
-// Elsewhere it opens itself again as a dialog, in the shipped `confirm` dialog's look; it focuses
-// itself, as a dialog another mod opens doesn't get the keyboard. Enter closes, Esc cancels.
+// focused pane. The shipped `confirm` dialog's look; drawn here rather than opened from here,
+// because a dialog another mod opens doesn't get the keyboard. Enter closes, Esc cancels.
 // The pane is named when the dialog opens, so focus moving to it can't change which closes.
 
 import { View, div } from "gpui-kit";
 import { v_flex, h_flex } from "gpui-base";
-import { run, props, closeOverlay, openOverlay, theme, focused, panes, layout, setShared } from "herdr";
-
-// The shown layout's pane header mod, if any.
-const headerMod = (n) => {
-  if (!n || typeof n !== "object") return null;
-  const h = n.content?.tab !== undefined ? n.content.pane?.header?.content?.mod : null;
-  return h ?? Object.values(n).map(headerMod).find(Boolean) ?? null;
-};
+import { run, props, closeOverlay, theme, focused, panes } from "herdr";
 
 export default class ConfirmPaneClose extends View {
   init(_props, cx) {
     const id = focused()?.pane;
-    // Opened by Cmd+W: an invisible popup that hands off, then closes.
-    if (!props()?.dialog) {
-      if (id && headerMod(layout()) === "diagram-pane") setShared("pane-ask", { pane: id, at: Date.now() });
-      else if (id) openOverlay({ mod: "confirm-pane-close", kind: "dialog", width: 380, height: 150, props: { dialog: true } });
-      this.handoff = true;
-      if (props()?.overlay) cx.timer.after(0, () => closeOverlay(props().overlay));
-      return;
-    }
     this.pane = id && panes().find((p) => p.pane === id);
     this.handle = cx.focus_handle();
     // Focusing in the same press that opened it doesn't hold; after it's drawn does.
@@ -40,10 +23,9 @@ export default class ConfirmPaneClose extends View {
   }
 
   render() {
-    if (this.handoff) return div();
     const t = theme();
     // Closing the dialog hands focus elsewhere; give it back to the pane.
-    const no = () => { closeOverlay(props().overlay); run("pane.focus", { pane: this.pane.pane }); };
+    const no = () => { closeOverlay(props().overlay); if (this.pane) run("pane.focus", { pane: this.pane.pane }); };
     const button = (id, label, bg, fg, onClick) =>
       h_flex().id(id).h(32).px(14).items_center().rounded(8).border_1().border_color(id === "no" ? t.input : bg).bg(bg).text_color(fg).cursor_pointer().hover((s) => s.opacity(0.88)).on_click(onClick).child(label);
     return v_flex().id("confirm").track_focus(this.handle)
