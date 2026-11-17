@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.DS_Store
+# written by the Herdr app into installed mod folders
+jsconfig.json
+*.d.ts

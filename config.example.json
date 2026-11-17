@@ -1,0 +1,12 @@
+{
+  "hints": "alphabet",
+  "alphabet": "asdfgklwertyuopzxvbn",
+  "action": "open",
+  "editor": "env",
+  "open_in": "float",
+  "split": "right",
+  "patterns": {
+    "jira": "\\b[A-Z][A-Z0-9]+-\\d+\\b",
+    "kubernetes-pod": false
+  }
+}
