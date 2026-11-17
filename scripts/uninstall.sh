@@ -5,7 +5,7 @@ set -euo pipefail
 repo=$(cd "$(dirname "$0")/.." && pwd)
 app=${HERDR_APP_HOME:-$HOME/.config/herdr-app}
 
-for src in "$repo"/mods/*/; do
+for src in "$repo"/*/mods/*/; do
   dst=$app/mods/$(basename "$src")
   if [[ -d $dst ]]; then
     mv "$dst" "$HOME/.Trash/$(basename "$src")-$(date +%Y%m%d%H%M%S)"
@@ -13,9 +13,12 @@ for src in "$repo"/mods/*/; do
   fi
 done
 
-/usr/bin/python3 -I - "$app/keys.json" "$repo/keys.json" <<'EOF'
+/usr/bin/python3 -I - "$app/keys.json" "$repo"/*/keys.json <<'EOF'
 import json, sys
-path, ours = sys.argv[1], json.load(open(sys.argv[2]))
+path, ours = sys.argv[1], {}
+for f in sys.argv[2:]:  # each mod folder's keys.json
+    for section, binds in json.load(open(f)).items():
+        ours.setdefault(section, {}).update(binds)
 try:
     keys = json.load(open(path))
 except FileNotFoundError:

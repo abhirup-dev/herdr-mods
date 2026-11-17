@@ -1,0 +1,5 @@
+{
+  "global": {
+    "cmd-alt-e": "mod.open:pane-equalize"
+  }
+}

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install (or update) the mods into the Herdr app, merge their keys and seed the config.
+# Install (or update) every mod folder's mods/* into the Herdr app, merge each folder's
+# keys.json and seed the fingers config. Safe to re-run: it updates in place.
 #   HERDR_APP_HOME   the app's folder (default ~/.config/herdr-app)
 #   FINGERS_NATIVE_CONFIG   the config file (default ~/.config/herdr-fingers-native/config.json)
 set -euo pipefail
@@ -11,7 +12,7 @@ stage=$HOME/.cache/herdr-fingers-native/stage
 
 [[ -d $app/mods ]] || { echo "No Herdr app folder at $app (start the app once, or set HERDR_APP_HOME)" >&2; exit 1; }
 
-for src in "$repo"/mods/*/; do
+for src in "$repo"/*/mods/*/; do
   name=$(basename "$src")
   dst=$app/mods/$name
   if [[ -d $dst ]]; then
@@ -35,13 +36,16 @@ py=${FINGERS_PYTHON:-}
 for c in /opt/homebrew/bin/python3 "$(command -v mise >/dev/null && mise which python3 2>/dev/null)" /usr/bin/python3; do
   [[ -z $py && -n $c && -x $c ]] && py=$c
 done
-ln -sfn "$py" "$app/mods/fingers-native/python3"
+ln -sfn "$py" "$app/mods/fingers-native/python3"  # fingers.py runs with it
 echo "python   $py ($("$py" -c 'import sys; print("%d.%d" % sys.version_info[:2])'))"
 
 # Keys: add ours; never replace a key bound to something else.
-/usr/bin/python3 -I - "$app/keys.json" "$repo/keys.json" <<'EOF'
+/usr/bin/python3 -I - "$app/keys.json" "$repo"/*/keys.json <<'EOF'
 import json, sys
-path, ours = sys.argv[1], json.load(open(sys.argv[2]))
+path, ours = sys.argv[1], {}
+for f in sys.argv[2:]:  # each mod folder's keys.json
+    for section, binds in json.load(open(f)).items():
+        ours.setdefault(section, {}).update(binds)
 try:
     keys = json.load(open(path))
 except FileNotFoundError:
@@ -67,9 +71,9 @@ EOF
 if [[ ! -f $config ]]; then
   mkdir -p "$(dirname "$config")"
   printf '{\n  "hints": "alphabet",\n  "action": "open",\n  "patterns": {}\n}\n' >"$config"
-  echo "config   $config (see config.example.json)"
+  echo "config   $config (see fingers/config.example.json)"
 fi
 
 if command -v herdr-app >/dev/null; then
-  for src in "$repo"/mods/*/; do herdr-app check "$app/mods/$(basename "$src")"; done
+  for src in "$repo"/*/mods/*/; do herdr-app check "$app/mods/$(basename "$src")"; done
 fi

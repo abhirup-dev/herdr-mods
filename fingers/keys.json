@@ -1,0 +1,6 @@
+{
+  "global": {
+    "cmd-shift-f": "mod.open:fingers-native",
+    "cmd-shift-o": "mod.open:fingers-native-picker"
+  }
+}

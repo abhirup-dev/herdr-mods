@@ -1,0 +1,6 @@
+{
+  "global": {
+    "cmd-w": "mod.open:confirm-pane-close",
+    "cmd-shift-w": "mod.open:confirm-tab-close"
+  }
+}
